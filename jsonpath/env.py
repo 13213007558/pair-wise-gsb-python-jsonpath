@@ -16,6 +16,7 @@ try:
 except ImportError:
     IREGEXP_AVAILABLE = False  # type: ignore
 
+import math
 from decimal import Decimal
 from operator import getitem
 from typing import TYPE_CHECKING
@@ -32,6 +33,9 @@ from typing import Type
 from typing import Union
 
 from . import function_extensions
+from ._data import load_data
+from ._types import NUMBER_MODE_FLOAT
+from ._types import NUMBER_MODE_PRECISE
 from .exceptions import JSONPathNameError
 from .exceptions import JSONPathSyntaxError
 from .exceptions import JSONPathTypeError
@@ -102,6 +106,11 @@ class JSONPathEnvironment:
             **New in version 0.10.0**
         strict: When `True`, follow RFC 9535 strictly.
             **New in version 2.0.0**
+        number_mode: One of "float" (the default) or "precise". When
+            "precise", JSON numbers - from both the target JSON document and
+            query number literals - are parsed exactly, without going through
+            binary floats. Integers become arbitrary precision ints and
+            non-integers become decimal.Decimals. **New in version 2.2.2**
 
     ## Class attributes
 
@@ -162,7 +171,14 @@ class JSONPathEnvironment:
         unicode_escape: bool = True,
         well_typed: bool = True,
         strict: bool = False,
+        number_mode: str = NUMBER_MODE_FLOAT,
     ) -> None:
+        if number_mode not in (NUMBER_MODE_FLOAT, NUMBER_MODE_PRECISE):
+            raise ValueError(
+                f"unknown number mode {number_mode!r}: "
+                f"expected {NUMBER_MODE_FLOAT!r} or {NUMBER_MODE_PRECISE!r}"
+            )
+
         self.filter_caching: bool = filter_caching
         """Enable or disable filter expression caching."""
 
@@ -179,6 +195,19 @@ class JSONPathEnvironment:
         This includes things like enforcing a leading root identifier and
         ensuring there's no leading or trailing whitespace when parsing a
         JSONPath query.
+        """
+
+        self.number_mode: str = number_mode
+        """The number semantics used for JSON documents and query literals.
+
+        Either `"float"` (the default) or `"precise"`. In precise mode,
+        integers are parsed to arbitrary precision `int`s and non-integer
+        JSON numbers are parsed to `decimal.Decimal`, never binary floats.
+        Booleans are not numbers and NaN/Infinity are rejected.
+
+        This should be set at construction time and not changed afterwards,
+        so compiled paths and cached filter expressions never mix number
+        modes.
         """
 
         self.regex_available: bool = REGEX_AVAILABLE
@@ -581,6 +610,20 @@ class JSONPathEnvironment:
             return await obj.__getitem_async__(key)
         return getitem(obj, key)
 
+    def load_data(self, data: object) -> Any:
+        """Load JSON text or a file-like object into Python objects.
+
+        Uses this environment's `number_mode`. In precise mode, JSON numbers
+        are parsed exactly - integers become `int`s and non-integers become
+        `decimal.Decimal`s - and NaN/Infinity are rejected with a
+        `JSONPathTypeError`.
+
+        Note that Python `float` objects already loaded by the caller are
+        kept as-is. We never try to recover the original decimal text from
+        a binary float.
+        """
+        return load_data(data, number_mode=self.number_mode)
+
     def is_truthy(self, obj: object) -> bool:
         """Test for truthiness when evaluating JSONPath filter expressions.
 
@@ -646,6 +689,10 @@ class JSONPathEnvironment:
         return False
 
     def _eq(self, left: object, right: object) -> bool:  # noqa: PLR0911
+        if self.number_mode == NUMBER_MODE_PRECISE:
+            self._check_finite(left)
+            self._check_finite(right)
+
         if isinstance(right, NodeList):
             left, right = right, left
 
@@ -674,9 +721,28 @@ class JSONPathEnvironment:
         if isinstance(left, str) and isinstance(right, str):
             return left < right
 
+        if self.number_mode == NUMBER_MODE_PRECISE:
+            self._check_finite(left)
+            self._check_finite(right)
+            # Booleans are not numbers.
+            if isinstance(left, bool) or isinstance(right, bool):
+                return False
+
         if isinstance(left, (int, float, Decimal)) and isinstance(
             right, (int, float, Decimal)
         ):
             return left < right
 
         return False
+
+    def _check_finite(self, obj: object) -> None:
+        """Raise if _obj_ is a non-JSON number, like NaN or Infinity.
+
+        Only active in precise number mode. Booleans are not numbers.
+        """
+        if isinstance(obj, bool):
+            return
+        if isinstance(obj, float) and not math.isfinite(obj):
+            raise JSONPathTypeError(f"{obj!r} is not a valid JSON number")
+        if isinstance(obj, Decimal) and not obj.is_finite():
+            raise JSONPathTypeError(f"{obj!r} is not a valid JSON number")

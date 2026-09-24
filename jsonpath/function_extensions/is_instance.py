@@ -1,5 +1,6 @@
 """A non-standard "isinstance" filter function."""
 
+from decimal import Decimal
 from typing import Mapping
 from typing import Sequence
 
@@ -47,4 +48,6 @@ class IsInstance(FilterFunction):
             return t in ("number", "int")
         if isinstance(obj, float):
             return t in ("number", "float")
+        if isinstance(obj, Decimal):
+            return t in ("number", "decimal")
         return t == "object"

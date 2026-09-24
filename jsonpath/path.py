@@ -12,7 +12,6 @@ from typing import Tuple
 from typing import TypeVar
 from typing import Union
 
-from jsonpath._data import load_data
 from jsonpath.fluent_api import Query
 from jsonpath.match import FilterContextVars
 from jsonpath.match import JSONPathMatch
@@ -118,7 +117,7 @@ class JSONPath:
             JSONPathRecursionError: If `max_recursion_depth` is reached with
                 the descendent segment.
         """
-        _data = load_data(data)
+        _data = self.env.load_data(data)
         path = self.env.pseudo_root_token if self.pseudo_root else self.env.root_token
 
         matches: Iterable[JSONPathMatch] = [
@@ -152,7 +151,7 @@ class JSONPath:
         self, data: JSONData, *, filter_context: Optional[FilterContextVars] = None
     ) -> AsyncIterable[JSONPathMatch]:
         """An async version of `finditer()`."""
-        _data = load_data(data)
+        _data = self.env.load_data(data)
         path = self.env.pseudo_root_token if self.pseudo_root else self.env.root_token
 
         async def root_iter() -> AsyncIterable[JSONPathMatch]:

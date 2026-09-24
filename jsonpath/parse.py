@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import re
+from decimal import Decimal
 from typing import TYPE_CHECKING
 from typing import Callable
 from typing import Dict
@@ -16,6 +17,7 @@ from typing import Union
 from jsonpath.function_extensions.filter_function import ExpressionType
 from jsonpath.function_extensions.filter_function import FilterFunction
 
+from ._types import NUMBER_MODE_PRECISE
 from .exceptions import JSONPathRecursionError
 from .exceptions import JSONPathSyntaxError
 from .exceptions import JSONPathTypeError
@@ -25,6 +27,7 @@ from .filter import NIL
 from .filter import TRUE
 from .filter import UNDEFINED_LITERAL
 from .filter import BaseExpression
+from .filter import DecimalLiteral
 from .filter import FilterContextPath
 from .filter import FilterExpression
 from .filter import FilterExpressionLiteral
@@ -628,6 +631,13 @@ class Parser:
         if self.env.strict and value.startswith("0") and len(value) > 1:
             raise JSONPathSyntaxError("invalid integer literal", token=token)
 
+        if self.env.number_mode == NUMBER_MODE_PRECISE:
+            if "e" in value or "E" in value:
+                # Exponent notation. Use a Decimal to avoid materializing
+                # huge integers and to stay exact.
+                return DecimalLiteral(value=Decimal(value))
+            return IntegerLiteral(value=int(value))
+
         # Convert to float first to handle scientific notation.
         return IntegerLiteral(value=int(float(value)))
 
@@ -637,6 +647,11 @@ class Parser:
 
         if value.startswith("0") and len(value.split(".")[0]) > 1:
             raise JSONPathSyntaxError("invalid float literal", token=token)
+
+        if self.env.number_mode == NUMBER_MODE_PRECISE:
+            # Parse the decimal text exactly, without going through a
+            # binary float.
+            return DecimalLiteral(value=Decimal(value))
 
         return FloatLiteral(value=float(value))
 

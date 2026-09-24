@@ -1,5 +1,6 @@
 """A non-standard "typeof" filter function."""
 
+from decimal import Decimal
 from typing import Mapping
 from typing import Sequence
 
@@ -51,4 +52,6 @@ class TypeOf(FilterFunction):
             return "number" if self.single_number_type else "int"
         if isinstance(obj, float):
             return "number" if self.single_number_type else "float"
+        if isinstance(obj, Decimal):
+            return "number" if self.single_number_type else "decimal"
         return "object"

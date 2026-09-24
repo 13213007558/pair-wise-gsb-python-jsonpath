@@ -29,3 +29,9 @@ Accepts:
 - a raw JSON string,
 - or a file-like object containing JSON data.
 """
+
+NUMBER_MODE_FLOAT = "float"
+"""Number mode where JSON numbers are handled as Python ints and floats."""
+
+NUMBER_MODE_PRECISE = "precise"
+"""Number mode where JSON numbers are handled as ints and Decimals."""

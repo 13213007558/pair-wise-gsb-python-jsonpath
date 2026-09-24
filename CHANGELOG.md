@@ -2,6 +2,10 @@
 
 # Version 2.2.2 (unreleased)
 
+**Features**
+
+- Added `number_mode` to `JSONPathEnvironment`. When set to `"precise"`, JSON numbers from both the target document and query literals are parsed exactly - integers become arbitrary precision `int`s and non-integers become `decimal.Decimal`s, never binary floats. In precise mode, booleans are not numbers and `NaN`/`Infinity` are rejected with a `JSONPathTypeError`. The default `"float"` mode is unchanged.
+
 **Fixes**
 
 - JSON Patch `move` and `copy` operations now use `add` semantics for their target locations. Previously it was not possible to move or copy to the end of an array with the special `-` index, and we would silently append to arrays given an index greater than the array's length. We now raise a `JSONPatchError` if the target index is greater than the number of elements in the array.

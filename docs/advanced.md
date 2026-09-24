@@ -257,3 +257,31 @@ env = MyJSONPathEnvironment()
 query = env.compile("$.users[999]")
 # jsonpath.exceptions.JSONPathIndexError: index out of range, line 1, column 8
 ```
+## Precise Number Mode
+
+By default, JSON numbers - from both the target JSON document and query number literals - are handled as Python `int`s and `float`s. This means large integers and high-precision decimals can lose precision. For example, the integer literal `9007199254740993` (2**53 + 1) is not exactly representable as a binary float.
+
+Set `number_mode="precise"` on a [`JSONPathEnvironment`](./api.md#jsonpath.JSONPathEnvironment) to parse all JSON numbers exactly, without going through binary floats. Integers become arbitrary precision `int`s and non-integers become [`decimal.Decimal`](https://docs.python.org/3/library/decimal.html)s. Comparisons and any arithmetic done by function extensions then follow decimal semantics.
+
+```python
+from jsonpath import JSONPathEnvironment
+
+env = JSONPathEnvironment(number_mode="precise")
+data = '[9007199254740992, 9007199254740993]'
+
+env.findall("$[?@ == 9007199254740993]", data)
+# [9007199254740993]
+
+env.findall("$[?@ == 0.30000000000000000001]", '[0.30000000000000000001]')
+# [Decimal('0.30000000000000000001')]
+```
+
+In precise mode:
+
+- Integers are parsed to `int` directly. Exponent-form integer literals (like `1e3`) become `Decimal`s, so huge exponents don't materialize huge ints.
+- Decimal and scientific notation literals are parsed with `decimal.Decimal`, never `float`. The global `decimal` context is not modified.
+- Booleans are not numbers. `true` and `false` never compare equal to or less/greater than a number.
+- `NaN` and `Infinity` are not valid JSON numbers. They are rejected with a `JSONPathTypeError`, both when loading JSON text and when a non-finite `float` or `Decimal` is compared.
+- Python `float` objects supplied directly by the caller are kept as-is. We never try to recover the original decimal text from a binary float, so the float `0.1` does not equal the literal `0.1` in precise mode.
+
+Set `number_mode` when constructing the environment and don't change it afterwards, so compiled paths and cached filter expressions never mix number modes.
