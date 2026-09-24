@@ -57,6 +57,8 @@ from .token import TOKEN_INTERSECTION
 from .token import TOKEN_PSEUDO_ROOT
 from .token import TOKEN_UNION
 from .token import Token
+from .transform import ConflictStrategy
+from .transform import TransformResult
 
 if TYPE_CHECKING:
     from ._types import JSONData
@@ -438,6 +440,68 @@ class JSONPathEnvironment:
                 Python's recursion limit.
         """
         return Query(self.finditer(path, data, filter_context=filter_context), self)
+
+    def transform(
+        self,
+        path: str,
+        data: JSONData,
+        callback: Optional[Callable[[JSONPathMatch], object]] = None,
+        *,
+        delete: bool = False,
+        conflict: ConflictStrategy = ConflictStrategy.ERROR,
+        filter_context: Optional[FilterContextVars] = None,
+        return_patch: bool = False,
+    ) -> TransformResult:
+        """Modify _data_ at each node matching _path_, atomically.
+
+        The full set of matching nodes is computed before anything is
+        modified, and all target locations are resolved against the document
+        as it was when the operation started. Removing several items from
+        the same array therefore does not suffer from index shifting, and
+        results never depend on the order in which matches were found.
+
+        All callbacks are invoked - with matches referring to the original
+        document - and all targets are validated before any modification is
+        committed. If a callback raises, _data_ is left unchanged.
+
+        Arguments:
+            path: The JSONPath as a string.
+            data: A JSON document or Python object implementing the
+                `Sequence` or `Mapping` interfaces.
+            callback: A function accepting a `JSONPathMatch` and returning
+                a replacement value for the matched node. Mutually exclusive
+                with _delete_.
+            delete: When `True`, remove each matched node instead of
+                replacing it. Mutually exclusive with _callback_.
+            conflict: The `ConflictStrategy` to apply when the initial
+                match set contains a node and one of its ancestors. Defaults
+                to `ConflictStrategy.ERROR`, which raises a
+                `JSONPathTransformConflictError` for such overlaps.
+            filter_context: Arbitrary data made available to filters using
+                the _filter context_ selector.
+            return_patch: When `True`, include a `JSONPatch` of plain
+                RFC 6902 operations in the result. Applying it to the
+                original document produces the same result.
+
+        Returns:
+            A `TransformResult`.
+
+        Raises:
+            JSONPathTransformError: If neither _callback_ nor _delete_ is
+                given, if both are given, or if a removal targets the
+                document root.
+            JSONPathTransformConflictError: If the initial match set
+                contains a node and one of its ancestors and _conflict_ is
+                `ConflictStrategy.ERROR`.
+        """
+        return self.compile(path).transform(
+            data,
+            callback,
+            delete=delete,
+            conflict=conflict,
+            filter_context=filter_context,
+            return_patch=return_patch,
+        )
 
     async def findall_async(
         self,

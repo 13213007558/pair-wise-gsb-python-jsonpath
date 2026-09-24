@@ -29,3 +29,7 @@ These package-level functions use the default [JSONPathEnvironment](api.md#jsonp
 ::: jsonpath.query
 
     handler: python
+
+::: jsonpath.transform
+
+    handler: python

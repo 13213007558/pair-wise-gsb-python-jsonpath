@@ -152,6 +152,22 @@ class JSONPathRecursionError(JSONPathError, RecursionError):
         self.token = token
 
 
+class JSONPathTransformError(JSONPathError):
+    """An exception raised when a transform operation can't be completed.
+
+    For example, when attempting to remove the document root, or when a
+    target node can not be validated against the original document.
+    """
+
+
+class JSONPathTransformConflictError(JSONPathTransformError):
+    """An exception raised when transform targets overlap.
+
+    Raised when the initial match set contains a node and one of its
+    ancestors, and no explicit conflict strategy has been selected.
+    """
+
+
 class JSONPointerError(Exception):
     """Base class for all JSON Pointer errors."""
 

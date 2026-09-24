@@ -51,6 +51,7 @@ nav:
       - Filter Functions: "functions.md"
       - Query Iterators: "query.md"
       - JSON Pointers: "pointers.md"
+      - Transforming Data: "transform.md"
       - Async Support: "async.md"
   - API Reference:
       - Package Level Functions: "convenience.md"

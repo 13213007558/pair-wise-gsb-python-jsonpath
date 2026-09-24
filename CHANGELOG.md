@@ -2,6 +2,10 @@
 
 # Version 2.2.2 (unreleased)
 
+**Features**
+
+- Added `jsonpath.transform()`, `JSONPathEnvironment.transform()` and `JSONPath.transform()`. `transform()` modifies a document based on the initial set of nodes matching a JSONPath query, either removing each match (`delete=True`) or replacing each match with the result of a callback. All target locations are resolved against the document as it was when the operation started, so removing several items from the same array does not suffer from index shifting, and results never depend on match order. Nodes matched by more than one selector are modified once only. If the initial match set contains a node and one of its ancestors, a `JSONPathTransformConflictError` is raised unless an explicit `ConflictStrategy` (`PARENT` or `CHILD`) is given. All callbacks are invoked and all targets validated before any modification is committed, so a failing callback leaves the original document unchanged. Pass `return_patch=True` to get a plain RFC 6902 `JSONPatch` that reproduces the result when applied to the original document.
+
 **Fixes**
 
 - JSON Patch `move` and `copy` operations now use `add` semantics for their target locations. Previously it was not possible to move or copy to the end of an array with the special `-` index, and we would silently append to arrays given an index greater than the array's length. We now raise a `JSONPatchError` if the target index is greater than the number of elements in the array.

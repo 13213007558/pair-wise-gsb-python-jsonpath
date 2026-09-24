@@ -5,6 +5,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 from typing import AsyncIterable
+from typing import Callable
 from typing import Iterable
 from typing import List
 from typing import Optional
@@ -20,6 +21,8 @@ from .exceptions import JSONPathError
 from .exceptions import JSONPathIndexError
 from .exceptions import JSONPathNameError
 from .exceptions import JSONPathSyntaxError
+from .exceptions import JSONPathTransformConflictError
+from .exceptions import JSONPathTransformError
 from .exceptions import JSONPathTypeError
 from .exceptions import JSONPointerError
 from .exceptions import JSONPointerIndexError
@@ -42,6 +45,8 @@ from .path import JSONPath
 from .pointer import JSONPointer
 from .pointer import RelativeJSONPointer
 from .pointer import resolve
+from .transform import ConflictStrategy
+from .transform import TransformResult
 
 if TYPE_CHECKING:
     from .match import FilterContextVars
@@ -50,6 +55,7 @@ if TYPE_CHECKING:
 __all__ = (
     "compile",
     "CompoundJSONPath",
+    "ConflictStrategy",
     "findall_async",
     "findall",
     "finditer_async",
@@ -64,6 +70,8 @@ __all__ = (
     "JSONPathMatch",
     "JSONPathNameError",
     "JSONPathSyntaxError",
+    "JSONPathTransformConflictError",
+    "JSONPathTransformError",
     "JSONPathTypeError",
     "JSONPointer",
     "JSONPointerError",
@@ -83,6 +91,8 @@ __all__ = (
     "RelativeJSONPointerIndexError",
     "RelativeJSONPointerSyntaxError",
     "resolve",
+    "transform",
+    "TransformResult",
     "JSON",
     "JSONData",
     "JSONScalar",
@@ -390,4 +400,70 @@ def query(
         _STRICT_ENV.query(path, data, filter_context=filter_context)
         if strict
         else DEFAULT_ENV.query(path, data, filter_context=filter_context)
+    )
+
+
+def transform(
+    path: str,
+    data: JSONData,
+    callback: Optional[Callable[[JSONPathMatch], object]] = None,
+    *,
+    delete: bool = False,
+    conflict: ConflictStrategy = ConflictStrategy.ERROR,
+    filter_context: Optional[FilterContextVars] = None,
+    return_patch: bool = False,
+    strict: bool = False,
+) -> TransformResult:
+    """Modify _data_ at each node matching _path_, atomically.
+
+    The full set of matching nodes is computed before anything is modified,
+    and all target locations are resolved against the document as it was
+    when the operation started. Removing several items from the same array
+    therefore does not suffer from index shifting, and results never depend
+    on the order in which matches were found.
+
+    All callbacks are invoked - with matches referring to the original
+    document - and all targets are validated before any modification is
+    committed. If a callback raises, _data_ is left unchanged.
+
+    Arguments:
+        path: The JSONPath as a string.
+        data: A JSON document or Python object implementing the `Sequence`
+            or `Mapping` interfaces.
+        callback: A function accepting a `JSONPathMatch` and returning a
+            replacement value for the matched node. Mutually exclusive with
+            _delete_.
+        delete: When `True`, remove each matched node instead of replacing
+            it. Mutually exclusive with _callback_.
+        conflict: The `ConflictStrategy` to apply when the initial match
+            set contains a node and one of its ancestors. Defaults to
+            `ConflictStrategy.ERROR`, which raises a
+            `JSONPathTransformConflictError` for such overlaps.
+        filter_context: Arbitrary data made available to filters using
+            the _filter context_ selector.
+        return_patch: When `True`, include a `JSONPatch` of plain
+            RFC 6902 operations in the result. Applying it to the original
+            document produces the same result.
+        strict: When `True`, compile and evaluate with strict compliance
+            with RFC 9535.
+
+    Returns:
+        A `TransformResult`.
+
+    Raises:
+        JSONPathTransformError: If neither _callback_ nor _delete_ is given,
+            if both are given, or if a removal targets the document root.
+        JSONPathTransformConflictError: If the initial match set contains a
+            node and one of its ancestors and _conflict_ is
+            `ConflictStrategy.ERROR`.
+    """
+    env = _STRICT_ENV if strict else DEFAULT_ENV
+    return env.transform(
+        path,
+        data,
+        callback,
+        delete=delete,
+        conflict=conflict,
+        filter_context=filter_context,
+        return_patch=return_patch,
     )

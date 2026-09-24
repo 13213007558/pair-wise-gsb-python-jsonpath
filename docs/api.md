@@ -31,3 +31,9 @@
 
 ::: jsonpath.JSONPatch
     handler: python
+
+::: jsonpath.TransformResult
+    handler: python
+
+::: jsonpath.ConflictStrategy
+    handler: python
