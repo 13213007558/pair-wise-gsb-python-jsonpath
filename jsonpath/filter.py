@@ -6,6 +6,7 @@ import copy
 import re
 from abc import ABC
 from abc import abstractmethod
+from decimal import Decimal
 from typing import TYPE_CHECKING
 from typing import Any
 from typing import Callable
@@ -218,6 +219,15 @@ class FloatLiteral(FilterExpressionLiteral[float]):
     """A float literal."""
 
     __slots__ = ()
+
+
+class DecimalLiteral(FilterExpressionLiteral[Decimal]):
+    """A `decimal.Decimal` literal, used in exact number mode."""
+
+    __slots__ = ()
+
+    def __str__(self) -> str:
+        return str(self.value)
 
 
 class RegexLiteral(FilterExpressionLiteral[Pattern[str]]):

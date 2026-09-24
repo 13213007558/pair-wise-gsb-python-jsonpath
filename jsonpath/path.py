@@ -118,7 +118,7 @@ class JSONPath:
             JSONPathRecursionError: If `max_recursion_depth` is reached with
                 the descendent segment.
         """
-        _data = load_data(data)
+        _data = load_data(data, exact_numbers=self.env.exact_numbers)
         path = self.env.pseudo_root_token if self.pseudo_root else self.env.root_token
 
         matches: Iterable[JSONPathMatch] = [
@@ -152,7 +152,7 @@ class JSONPath:
         self, data: JSONData, *, filter_context: Optional[FilterContextVars] = None
     ) -> AsyncIterable[JSONPathMatch]:
         """An async version of `finditer()`."""
-        _data = load_data(data)
+        _data = load_data(data, exact_numbers=self.env.exact_numbers)
         path = self.env.pseudo_root_token if self.pseudo_root else self.env.root_token
 
         async def root_iter() -> AsyncIterable[JSONPathMatch]:

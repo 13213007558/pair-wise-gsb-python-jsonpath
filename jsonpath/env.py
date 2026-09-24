@@ -102,6 +102,24 @@ class JSONPathEnvironment:
             **New in version 0.10.0**
         strict: When `True`, follow RFC 9535 strictly.
             **New in version 2.0.0**
+        exact_numbers: When `True`, use exact number semantics for filter
+            literals and JSON data. Integer literals are parsed with arbitrary
+            precision, decimal and scientific notation literals are parsed as
+            `decimal.Decimal` without going through binary floats, and JSON
+            documents given as strings or file-like objects are loaded with
+            `parse_float=Decimal`. Non-JSON numbers (`NaN`, `Infinity` and
+            `-Infinity`) found in JSON text are rejected with a
+            `JSONPathError`.
+
+            Python `float` objects already present in caller-supplied data are
+            left as-is. They are compared exactly against `int`/`Decimal`
+            values using Python's mixed numeric comparison, without any attempt
+            to recover the original decimal text. Booleans are never treated
+            as numbers in exact number mode.
+
+            The global `decimal` context is never modified.
+
+            **New in version 2.2.2**
 
     ## Class attributes
 
@@ -162,6 +180,7 @@ class JSONPathEnvironment:
         unicode_escape: bool = True,
         well_typed: bool = True,
         strict: bool = False,
+        exact_numbers: bool = False,
     ) -> None:
         self.filter_caching: bool = filter_caching
         """Enable or disable filter expression caching."""
@@ -179,6 +198,15 @@ class JSONPathEnvironment:
         This includes things like enforcing a leading root identifier and
         ensuring there's no leading or trailing whitespace when parsing a
         JSONPath query.
+        """
+
+        self.exact_numbers: bool = exact_numbers
+        """Enable exact number semantics for literals, data and comparisons.
+
+        Compiled paths and filter caches are bound to this environment
+        instance, so a single environment never mixes number modes. Create a
+        separate `JSONPathEnvironment` for each number mode your application
+        needs.
         """
 
         self.regex_available: bool = REGEX_AVAILABLE
@@ -673,6 +701,10 @@ class JSONPathEnvironment:
     def _lt(self, left: object, right: object) -> bool:
         if isinstance(left, str) and isinstance(right, str):
             return left < right
+
+        if self.exact_numbers and (isinstance(left, bool) or isinstance(right, bool)):
+            # Booleans are not numbers in exact number mode.
+            return False
 
         if isinstance(left, (int, float, Decimal)) and isinstance(
             right, (int, float, Decimal)

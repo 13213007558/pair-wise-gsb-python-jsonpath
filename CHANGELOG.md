@@ -2,6 +2,10 @@
 
 # Version 2.2.2 (unreleased)
 
+**Features**
+
+- Added an exact number mode. Construct a `JSONPathEnvironment` with `exact_numbers=True` to parse integer filter literals with arbitrary precision and decimal/scientific notation literals as `decimal.Decimal`, without going through binary floats. JSON documents given as strings or file-like objects are loaded with `parse_float=Decimal`, `NaN`/`Infinity`/`-Infinity` in JSON text are rejected with a `JSONPathError`, booleans are never treated as numbers, and caller-supplied `float` objects are compared as-is without reconstructing decimal text. The global `decimal` context is not modified, and the default number behavior is unchanged.
+
 **Fixes**
 
 - JSON Patch `move` and `copy` operations now use `add` semantics for their target locations. Previously it was not possible to move or copy to the end of an array with the special `-` index, and we would silently append to arrays given an index greater than the array's length. We now raise a `JSONPatchError` if the target index is greater than the number of elements in the array.

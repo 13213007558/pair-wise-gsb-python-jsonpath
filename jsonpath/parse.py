@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import re
+from decimal import Decimal
 from typing import TYPE_CHECKING
 from typing import Callable
 from typing import Dict
@@ -25,6 +26,7 @@ from .filter import NIL
 from .filter import TRUE
 from .filter import UNDEFINED_LITERAL
 from .filter import BaseExpression
+from .filter import DecimalLiteral
 from .filter import FilterContextPath
 from .filter import FilterExpression
 from .filter import FilterExpressionLiteral
@@ -628,6 +630,20 @@ class Parser:
         if self.env.strict and value.startswith("0") and len(value) > 1:
             raise JSONPathSyntaxError("invalid integer literal", token=token)
 
+        if self.env.exact_numbers:
+            if "e" in value or "E" in value:
+                # Scientific notation is parsed exactly, without going through
+                # a binary float. A Decimal also avoids materializing huge
+                # integers from large exponents.
+                return DecimalLiteral(value=Decimal(value))
+            try:
+                return IntegerLiteral(value=int(value))
+            except ValueError:
+                # Exceeds sys.get_int_max_str_digits().
+                raise JSONPathSyntaxError(
+                    "integer literal is too big", token=token
+                ) from None
+
         # Convert to float first to handle scientific notation.
         return IntegerLiteral(value=int(float(value)))
 
@@ -637,6 +653,10 @@ class Parser:
 
         if value.startswith("0") and len(value.split(".")[0]) > 1:
             raise JSONPathSyntaxError("invalid float literal", token=token)
+
+        if self.env.exact_numbers:
+            # Parse exactly, without going through a binary float.
+            return DecimalLiteral(value=Decimal(value))
 
         return FloatLiteral(value=float(value))
 

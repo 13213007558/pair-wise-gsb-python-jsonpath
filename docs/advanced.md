@@ -257,3 +257,47 @@ env = MyJSONPathEnvironment()
 query = env.compile("$.users[999]")
 # jsonpath.exceptions.JSONPathIndexError: index out of range, line 1, column 8
 ```
+
+### Exact Number Mode
+
+By default, JSON numbers are represented using Python `int` and `float`, and
+non-integer filter literals are parsed through Python's binary floating point.
+This means very large integers can lose precision. For example, the filter
+literal `9007199254740993` (`2**53 + 1`) would be rounded to
+`9007199254740992`.
+
+Set `exact_numbers=True` when constructing a
+[`JSONPathEnvironment`](./api.md#jsonpath.JSONPathEnvironment) to enable exact
+number semantics:
+
+- Integer filter literals are parsed with arbitrary precision.
+- Decimal and scientific notation filter literals are parsed as
+  [`decimal.Decimal`](https://docs.python.org/3/library/decimal.html)
+  without going through a binary `float`.
+- JSON documents supplied as strings or file-like objects are loaded with
+  `parse_float=Decimal`, so document numbers and filter literals share the same
+  exact semantics. This also applies to high-precision decimals and huge
+  exponents like `1e100000`.
+- Booleans are never treated as numbers, so comparisons such as `@ < 2` do not
+  match `true` or `false`.
+- The non-JSON values `NaN`, `Infinity` and `-Infinity` found in JSON text are
+  rejected with a `JSONPathError`.
+- The global `decimal` context is never modified.
+
+```python
+from jsonpath import JSONPathEnvironment
+
+env = JSONPathEnvironment(exact_numbers=True)
+env.findall("$[?@ == 9007199254740993]", [9007199254740992, 9007199254740993])
+# [9007199254740993]
+```
+
+If data is already parsed into Python objects, `float` values are left as-is.
+They are compared against `int` and `Decimal` values using Python's exact mixed
+numeric comparison; python-jsonpath does not attempt to reconstruct the
+original decimal text of a caller-supplied `float`. Parsed results that came
+from JSON text will be `Decimal` instances.
+
+Compiled queries and filter caches belong to the environment they were
+compiled with. Use a separate `JSONPathEnvironment` for each number mode; the
+default environment retains its existing `int`/`float` behavior.
