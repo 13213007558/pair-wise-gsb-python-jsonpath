@@ -2,6 +2,10 @@
 
 # Version 2.2.2 (unreleased)
 
+**Features**
+
+- Added `jsonpath.update()` and `JSONPathEnvironment.update()`, snapshot-based atomic updates of JSON-like data. All target locations are resolved against the document as it was when the operation started, so removing several items from the same array never suffers from shifting indices. Each distinct node is modified at most once, ancestor/descendant conflicts between targets require an explicit `ConflictStrategy`, and all callback results are computed and validated before any modification is published, so a failing callback leaves the document unchanged. Pass `patch=True` to also get a plain RFC 6902 `JSONPatch` that produces the same result when applied to the original document.
+
 **Fixes**
 
 - JSON Patch `move` and `copy` operations now use `add` semantics for their target locations. Previously it was not possible to move or copy to the end of an array with the special `-` index, and we would silently append to arrays given an index greater than the array's length. We now raise a `JSONPatchError` if the target index is greater than the number of elements in the array.

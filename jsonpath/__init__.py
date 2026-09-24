@@ -5,6 +5,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 from typing import AsyncIterable
+from typing import Callable
 from typing import Iterable
 from typing import List
 from typing import Optional
@@ -21,6 +22,7 @@ from .exceptions import JSONPathIndexError
 from .exceptions import JSONPathNameError
 from .exceptions import JSONPathSyntaxError
 from .exceptions import JSONPathTypeError
+from .exceptions import JSONPathUpdateError
 from .exceptions import JSONPointerError
 from .exceptions import JSONPointerIndexError
 from .exceptions import JSONPointerKeyError
@@ -42,6 +44,9 @@ from .path import JSONPath
 from .pointer import JSONPointer
 from .pointer import RelativeJSONPointer
 from .pointer import resolve
+from .update import REMOVE
+from .update import ConflictStrategy
+from .update import UpdateResult
 
 if TYPE_CHECKING:
     from .match import FilterContextVars
@@ -50,6 +55,7 @@ if TYPE_CHECKING:
 __all__ = (
     "compile",
     "CompoundJSONPath",
+    "ConflictStrategy",
     "findall_async",
     "findall",
     "finditer_async",
@@ -65,6 +71,7 @@ __all__ = (
     "JSONPathNameError",
     "JSONPathSyntaxError",
     "JSONPathTypeError",
+    "JSONPathUpdateError",
     "JSONPointer",
     "JSONPointerError",
     "JSONPointerIndexError",
@@ -78,11 +85,14 @@ __all__ = (
     "Projection",
     "query",
     "Query",
+    "REMOVE",
     "RelativeJSONPointer",
     "RelativeJSONPointerError",
     "RelativeJSONPointerIndexError",
     "RelativeJSONPointerSyntaxError",
     "resolve",
+    "update",
+    "UpdateResult",
     "JSON",
     "JSONData",
     "JSONScalar",
@@ -390,4 +400,72 @@ def query(
         _STRICT_ENV.query(path, data, filter_context=filter_context)
         if strict
         else DEFAULT_ENV.query(path, data, filter_context=filter_context)
+    )
+
+
+def update(
+    path: Union[str, Iterable[str]],
+    data: JSONData,
+    func: Optional[Callable[[JSONPathMatch], object]] = None,
+    *,
+    remove: bool = False,
+    conflict: ConflictStrategy = ConflictStrategy.ERROR,
+    filter_context: Optional[FilterContextVars] = None,
+    patch: bool = False,
+    strict: bool = False,
+) -> UpdateResult:
+    """Modify _data_ at locations matched by one or more JSONPaths, atomically.
+
+    All target locations are resolved against _data_ as it is when this
+    function is called. Removing several items from the same array, for
+    example, uses the array indices from before any modification took place.
+
+    Every distinct node is modified at most once, no matter how many paths
+    or selectors match it. If one matched node contains another matched
+    node, _conflict_ decides how to proceed.
+
+    All callback results are computed and all targets are validated before
+    any modification is published. If a callback raises an exception, _data_
+    is left unchanged.
+
+    Arguments:
+        path: A JSONPath string, or an iterable of JSONPath strings.
+        data: A JSON document or Python object implementing the `Sequence`
+            or `Mapping` interfaces. Required containers must be mutable.
+        func: A callable accepting a `JSONPathMatch` and returning a
+            replacement value, or the `REMOVE` sentinel to delete the
+            matched node. It is called exactly once per distinct matched
+            node, before any modification takes place.
+        remove: If `True`, remove all matched nodes. Mutually exclusive
+            with _func_.
+        conflict: The `ConflictStrategy` used when a matched node is an
+            ancestor of another matched node. Defaults to
+            `ConflictStrategy.ERROR`.
+        filter_context: Arbitrary data made available to filters using
+            the _filter context_ selector.
+        patch: If `True`, include a plain RFC 6902 `JSONPatch` in the
+            result. Applying it to the original document yields the same
+            result as this update.
+        strict: When `True`, compile and evaluate paths with strict
+            compliance with RFC 9535.
+
+    Returns:
+        An `UpdateResult` with the updated document and, optionally, a
+        `JSONPatch`.
+
+    Raises:
+        JSONPathUpdateError: If _func_ and _remove_ are both given or both
+            missing, if matched nodes conflict and _conflict_ is
+            `ConflictStrategy.ERROR`, if the document root is removed, or
+            if a target can't be modified in place.
+    """
+    env = _STRICT_ENV if strict else DEFAULT_ENV
+    return env.update(
+        path,
+        data,
+        func,
+        remove=remove,
+        conflict=conflict,
+        filter_context=filter_context,
+        patch=patch,
     )

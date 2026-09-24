@@ -257,3 +257,37 @@ env = MyJSONPathEnvironment()
 query = env.compile("$.users[999]")
 # jsonpath.exceptions.JSONPathIndexError: index out of range, line 1, column 8
 ```
+
+## Atomic Updates
+
+**New in version 2.2.2**
+
+`jsonpath.update()` (and [`JSONPathEnvironment.update()`](api.md#jsonpath.JSONPathEnvironment.update)) modifies data at all locations matched by one or more JSONPaths. Unlike a "find then modify" loop, all target locations are resolved against the document as it was when the operation started. Removing several items from the same array uses the array indices from before any modification took place, so results never depend on the order in which matches are found.
+
+```python
+import jsonpath
+
+data = {"items": [{"id": 0, "expired": True}, {"id": 1, "expired": False}]}
+result = jsonpath.update("$..items[?@.expired == true]", data, remove=True)
+print(result.data)  # {'items': [{'id': 1, 'expired': False}]}
+```
+
+Give a callback instead of `remove=True` to replace matched values. The callback is called exactly once per distinct matched node - even if several paths or selectors match the same node - and can return the `jsonpath.REMOVE` sentinel to delete the node. All callback results are computed and all targets are validated before any modification is published, so a failing callback leaves the original document unchanged.
+
+```python
+result = jsonpath.update("$.items[*].price", data, lambda match: match.value * 2)
+```
+
+If one matched node contains another matched node, you must choose a `ConflictStrategy`. The default, `ConflictStrategy.ERROR`, raises a `JSONPathUpdateError`. `ConflictStrategy.SHALLOW` keeps the ancestor target and discards targets inside it, while `ConflictStrategy.DEEP` does the opposite.
+
+Pass `patch=True` to also get a plain RFC 6902 `JSONPatch` which, when applied to the original document, produces exactly the same result as the update.
+
+```python
+data = [0, 1, 2, 3, 4]
+result = jsonpath.update("$[0, 1, 2]", data, remove=True, patch=True)
+print(result.data)               # [3, 4]
+print(result.patch.asdicts())
+# [{'op': 'remove', 'path': '/2'},
+#  {'op': 'remove', 'path': '/1'},
+#  {'op': 'remove', 'path': '/0'}]
+```

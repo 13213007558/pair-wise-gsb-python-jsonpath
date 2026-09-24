@@ -152,6 +152,15 @@ class JSONPathRecursionError(JSONPathError, RecursionError):
         self.token = token
 
 
+class JSONPathUpdateError(JSONPathError):
+    """An exception raised when a snapshot-based update can't be applied.
+
+    This includes ancestor/descendant conflicts between update targets and
+    targets that can't be modified in place, like the document root or
+    immutable containers.
+    """
+
+
 class JSONPointerError(Exception):
     """Base class for all JSON Pointer errors."""
 
