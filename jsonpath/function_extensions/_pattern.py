@@ -38,6 +38,7 @@ class AbstractRegexFilterFunction(FilterFunction):
 
     arg_types = [ExpressionType.VALUE, ExpressionType.VALUE]
     return_type = ExpressionType.LOGICAL
+    pure = True
 
     def __init__(
         self,

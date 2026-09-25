@@ -9,6 +9,7 @@ class StartsWith(FilterFunction):
 
     arg_types = [ExpressionType.VALUE, ExpressionType.VALUE]
     return_type = ExpressionType.LOGICAL
+    pure = True
 
     def __call__(self, value: object, prefix: object) -> bool:
         """Return `True` if `value` starts with `prefix`."""

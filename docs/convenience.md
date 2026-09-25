@@ -6,6 +6,10 @@ These package-level functions use the default [JSONPathEnvironment](api.md#jsonp
 
     handler: python
 
+::: jsonpath.compile_many
+
+    handler: python
+
 ::: jsonpath.findall
 
     handler: python

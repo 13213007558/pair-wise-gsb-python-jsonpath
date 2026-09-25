@@ -11,6 +11,12 @@
 ::: jsonpath.CompoundJSONPath
     handler: python
 
+::: jsonpath.QueryPlan
+    handler: python
+
+::: jsonpath.BatchResult
+    handler: python
+
 ::: jsonpath.Query
     handler: python
 

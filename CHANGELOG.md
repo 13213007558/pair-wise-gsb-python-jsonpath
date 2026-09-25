@@ -2,6 +2,10 @@
 
 # Version 2.2.2 (unreleased)
 
+**Features**
+
+- Added `compile_many()` and `JSONPathEnvironment.compile_many()`. Multiple named JSONPath queries can now be compiled into a single `QueryPlan`, which shares common, safe-to-reuse selection steps between queries when applied to a JSON document. Filter expressions calling function extensions that have not been declared pure (see the new `FilterFunction.pure` attribute) are never shared. Per-query failures are reported by name with `JSONPathBatchError` or `BatchResult.errors`.
+
 **Fixes**
 
 - JSON Patch `move` and `copy` operations now use `add` semantics for their target locations. Previously it was not possible to move or copy to the end of an array with the special `-` index, and we would silently append to arrays given an index greater than the array's length. We now raise a `JSONPatchError` if the target index is greater than the number of elements in the array.

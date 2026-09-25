@@ -32,6 +32,7 @@ from typing import Type
 from typing import Union
 
 from . import function_extensions
+from .batch import QueryPlan
 from .exceptions import JSONPathNameError
 from .exceptions import JSONPathSyntaxError
 from .exceptions import JSONPathTypeError
@@ -274,6 +275,30 @@ class JSONPathEnvironment:
                     )
 
         return _path
+
+    def compile_many(self, queries: Mapping[str, str]) -> QueryPlan:
+        """Prepare multiple named JSONPaths for shared, repeated matching.
+
+        Queries are compiled into a single `QueryPlan`. Selection steps that
+        are common to two or more queries, and safe to reuse, are resolved
+        once per application of the plan and shared between those queries.
+        Filter expressions calling function extensions that have not been
+        declared pure (see `FilterFunction.pure`) are never shared.
+
+        Arguments:
+            queries: A mapping of query name to JSONPath string.
+
+        Returns:
+            A `QueryPlan`, ready to be applied to some data with
+            `QueryPlan.findall()`, `QueryPlan.finditer()` or their async
+            counterparts.
+
+        Raises:
+            JSONPathBatchError: If one or more paths are invalid. The
+                exception's `errors` attribute maps query names to the
+                `JSONPathError` raised when compiling that query.
+        """
+        return QueryPlan(env=self, queries=queries)
 
     def findall(
         self,

@@ -17,6 +17,9 @@ Each of the following exceptions has a `token` property, referencing the [`Token
 ::: jsonpath.JSONPathNameError
     handler: python
 
+::: jsonpath.JSONPathBatchError
+    handler: python
+
 ::: jsonpath.JSONPointerError
     handler: python
 

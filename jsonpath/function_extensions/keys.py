@@ -16,6 +16,7 @@ class Keys(FilterFunction):
 
     arg_types = [ExpressionType.VALUE]
     return_type = ExpressionType.VALUE
+    pure = True
 
     def __call__(
         self, value: Mapping[str, object]

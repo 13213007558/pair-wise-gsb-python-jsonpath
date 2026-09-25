@@ -16,6 +16,7 @@ class Value(FilterFunction):
 
     arg_types = [ExpressionType.NODES]
     return_type = ExpressionType.VALUE
+    pure = True
 
     def __call__(self, nodes: NodeList) -> object:
         """Return the first node in a node list if it has only one item."""

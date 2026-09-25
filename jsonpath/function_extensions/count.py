@@ -15,6 +15,7 @@ class Count(FilterFunction):
 
     arg_types = [ExpressionType.NODES]
     return_type = ExpressionType.VALUE
+    pure = True
 
     def __call__(self, node_list: NodeList) -> int:
         """Return the number of nodes in the node list."""

@@ -7,15 +7,19 @@ from typing import TYPE_CHECKING
 from typing import AsyncIterable
 from typing import Iterable
 from typing import List
+from typing import Mapping
 from typing import Optional
 from typing import Union
 
 from ._types import JSON
 from ._types import JSONData
 from ._types import JSONScalar
+from .batch import BatchResult
+from .batch import QueryPlan
 from .env import JSONPathEnvironment
 from .exceptions import JSONPatchError
 from .exceptions import JSONPatchTestFailure
+from .exceptions import JSONPathBatchError
 from .exceptions import JSONPathError
 from .exceptions import JSONPathIndexError
 from .exceptions import JSONPathNameError
@@ -48,7 +52,9 @@ if TYPE_CHECKING:
 
 
 __all__ = (
+    "BatchResult",
     "compile",
+    "compile_many",
     "CompoundJSONPath",
     "findall_async",
     "findall",
@@ -57,6 +63,7 @@ __all__ = (
     "JSONPatch",
     "JSONPatchError",
     "JSONPatchTestFailure",
+    "JSONPathBatchError",
     "JSONPath",
     "JSONPathEnvironment",
     "JSONPathError",
@@ -76,6 +83,7 @@ __all__ = (
     "match",
     "Parser",
     "Projection",
+    "QueryPlan",
     "query",
     "Query",
     "RelativeJSONPointer",
@@ -390,4 +398,37 @@ def query(
         _STRICT_ENV.query(path, data, filter_context=filter_context)
         if strict
         else DEFAULT_ENV.query(path, data, filter_context=filter_context)
+    )
+
+
+def compile_many(
+    queries: Mapping[str, str], *, strict: bool = False
+) -> QueryPlan:
+    """Prepare multiple named JSONPaths for shared, repeated matching.
+
+    Queries are compiled into a single `QueryPlan`. Selection steps that are
+    common to two or more queries, and safe to reuse, are resolved once per
+    application of the plan and shared between those queries. Filter
+    expressions calling function extensions that have not been declared pure
+    (see `FilterFunction.pure`) are never shared.
+
+    Arguments:
+        queries: A mapping of query name to JSONPath string.
+        strict: When `True`, compile the queries for strict compliance with
+            RFC 9535.
+
+    Returns:
+        A `QueryPlan`, ready to be applied to some data with
+        `QueryPlan.findall()`, `QueryPlan.finditer()` or their async
+        counterparts.
+
+    Raises:
+        JSONPathBatchError: If one or more paths are invalid. The exception's
+            `errors` attribute maps query names to the `JSONPathError`
+            raised when compiling that query.
+    """
+    return (
+        _STRICT_ENV.compile_many(queries)
+        if strict
+        else DEFAULT_ENV.compile_many(queries)
     )

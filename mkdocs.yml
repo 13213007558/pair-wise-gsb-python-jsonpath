@@ -52,6 +52,7 @@ nav:
       - Query Iterators: "query.md"
       - JSON Pointers: "pointers.md"
       - Async Support: "async.md"
+      - Batch Queries: "batch.md"
   - API Reference:
       - Package Level Functions: "convenience.md"
       - High Level API: "api.md"

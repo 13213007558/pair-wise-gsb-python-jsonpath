@@ -13,6 +13,7 @@ class Length(FilterFunction):
 
     arg_types = [ExpressionType.VALUE]
     return_type = ExpressionType.VALUE
+    pure = True
 
     def __call__(self, obj: Sized) -> Union[int, _Undefined]:
         """Return an object's length.

@@ -17,6 +17,16 @@ class ExpressionType(Enum):
 class FilterFunction(ABC):
     """Base class for typed function extensions."""
 
+    pure: bool = False
+    """Whether repeated evaluation of this function is free of side effects.
+
+    When `False` (the default), batch query plans built with
+    `JSONPathEnvironment.compile_many()` will not share evaluation of filter
+    expressions using this function between queries. Set to `True` to declare
+    that this function is deterministic and side effect free, allowing its
+    evaluation to be shared.
+    """
+
     @property
     @abstractmethod
     def arg_types(self) -> List[ExpressionType]:

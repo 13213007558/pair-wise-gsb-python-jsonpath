@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 from typing import TYPE_CHECKING
+from typing import Dict
+from typing import Mapping
 from typing import Optional
 
 from .token import TOKEN_EOF
@@ -150,6 +152,29 @@ class JSONPathRecursionError(JSONPathError, RecursionError):
     def __init__(self, *args: object, token: Optional[Token]) -> None:
         super().__init__(*args)
         self.token = token
+
+
+class JSONPathBatchError(JSONPathError):
+    """Raised when one or more queries in a `QueryPlan` fail.
+
+    Attributes:
+        errors: A mapping of query name to the exception raised by that query.
+        results: A mapping of query name to partial results for those queries
+            that did not raise an exception, if any.
+    """
+
+    def __init__(
+        self,
+        errors: Mapping[str, Exception],
+        results: Optional[Mapping[str, object]] = None,
+    ) -> None:
+        self.errors = dict(errors)
+        self.results: Dict[str, object] = dict(results) if results else {}
+        names = ", ".join(sorted(self.errors))
+        plural = "" if len(self.errors) == 1 else "s"
+        super().__init__(
+            f"{len(self.errors)} quer{plural} failed: {names}", token=None
+        )
 
 
 class JSONPointerError(Exception):
