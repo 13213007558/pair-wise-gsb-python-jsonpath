@@ -36,6 +36,7 @@ class AbstractRegexFilterFunction(FilterFunction):
             instance of `LRUCache`.
     """
 
+    pure = True
     arg_types = [ExpressionType.VALUE, ExpressionType.VALUE]
     return_type = ExpressionType.LOGICAL
 

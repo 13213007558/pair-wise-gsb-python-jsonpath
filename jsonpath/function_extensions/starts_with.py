@@ -7,6 +7,7 @@ from jsonpath.function_extensions import FilterFunction
 class StartsWith(FilterFunction):
     """The `startswith` function extension."""
 
+    pure = True
     arg_types = [ExpressionType.VALUE, ExpressionType.VALUE]
     return_type = ExpressionType.LOGICAL
 

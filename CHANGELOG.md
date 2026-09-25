@@ -2,6 +2,11 @@
 
 # Version 2.2.2 (unreleased)
 
+**New**
+
+- Added `jsonpath.compile_many()` and `JSONPathEnvironment.compile_many()`. Multiple named JSONPaths can now be compiled into a single, reusable `CompiledBatch` plan. Queries that share a common prefix of segments have that prefix resolved just once per execution, while every query still produces exactly the same results - order, duplicates and normalized paths included - as it would when executed on its own. Filters calling function extensions are only shared when every function involved is known to be free of side effects. Custom functions are treated as if they might have side effects unless they declare a `pure` attribute that is true. Failures are raised as `JSONPathBatchError`, identifying the offending query by name. Both synchronous and asynchronous (`findall_async()`/`finditer_async()`) execution are supported.
+- Added a `pure` class attribute to `jsonpath.function_extensions.FilterFunction`, defaulting to `False`. All built-in function extensions set it to `True`.
+
 **Fixes**
 
 - JSON Patch `move` and `copy` operations now use `add` semantics for their target locations. Previously it was not possible to move or copy to the end of an array with the special `-` index, and we would silently append to arrays given an index greater than the array's length. We now raise a `JSONPatchError` if the target index is greater than the number of elements in the array.

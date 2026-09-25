@@ -13,6 +13,7 @@ from jsonpath.match import NodeList
 class IsInstance(FilterFunction):
     """A non-standard "isinstance" filter function."""
 
+    pure = True
     arg_types = [ExpressionType.NODES, ExpressionType.VALUE]
     return_type = ExpressionType.LOGICAL
 

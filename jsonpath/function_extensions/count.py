@@ -13,6 +13,7 @@ if TYPE_CHECKING:
 class Count(FilterFunction):
     """The built-in `count` function."""
 
+    pure = True
     arg_types = [ExpressionType.NODES]
     return_type = ExpressionType.VALUE
 

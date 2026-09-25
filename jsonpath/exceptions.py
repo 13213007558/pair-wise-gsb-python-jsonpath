@@ -2,8 +2,13 @@
 
 from __future__ import annotations
 
+from typing import Any
 from typing import TYPE_CHECKING
+from typing import Dict
+from typing import List
+from typing import Mapping
 from typing import Optional
+from typing import Sequence
 
 from .token import TOKEN_EOF
 
@@ -150,6 +155,34 @@ class JSONPathRecursionError(JSONPathError, RecursionError):
     def __init__(self, *args: object, token: Optional[Token]) -> None:
         super().__init__(*args)
         self.token = token
+
+
+class JSONPathBatchError(JSONPathError):
+    """An exception raised when one or more queries in a compiled batch fail.
+
+    Arguments:
+        args: Arguments passed to `Exception`.
+        token: The token that caused the error, if any.
+        name: The name of the first query that failed.
+        errors: A mapping of query names to the exception they raised.
+        results: A mapping of query names to the `JSONPathMatch` objects they
+            produced. Only queries that completed successfully are included.
+    """
+
+    def __init__(
+        self,
+        *args: object,
+        token: Optional[Token] = None,
+        name: Optional[str] = None,
+        errors: Optional[Mapping[str, Exception]] = None,
+        results: Optional[Mapping[str, Sequence[Any]]] = None,
+    ) -> None:
+        super().__init__(*args, token=token)
+        self.name = name
+        self.errors: Dict[str, Exception] = dict(errors or {})
+        self.results: Dict[str, List[Any]] = {
+            key: list(value) for key, value in (results or {}).items()
+        }
 
 
 class JSONPointerError(Exception):

@@ -14,6 +14,7 @@ from .filter_function import FilterFunction
 class Keys(FilterFunction):
     """The `keys` JSONPath filter function."""
 
+    pure = True
     arg_types = [ExpressionType.VALUE]
     return_type = ExpressionType.VALUE
 

@@ -14,6 +14,7 @@ if TYPE_CHECKING:
 class Value(FilterFunction):
     """A type-aware implementation of the standard `value` function."""
 
+    pure = True
     arg_types = [ExpressionType.NODES]
     return_type = ExpressionType.VALUE
 

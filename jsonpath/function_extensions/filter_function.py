@@ -17,6 +17,15 @@ class ExpressionType(Enum):
 class FilterFunction(ABC):
     """Base class for typed function extensions."""
 
+    pure: bool = False
+    """Whether or not calling this function is free of observable side effects.
+
+    When `True`, plans compiled with `jsonpath.compile_many()` may share the
+    result of evaluating a filter that uses this function between queries with
+    a common prefix. When `False` (the default), such filters are always
+    evaluated once per query, preserving any side effects.
+    """
+
     @property
     @abstractmethod
     def arg_types(self) -> List[ExpressionType]:

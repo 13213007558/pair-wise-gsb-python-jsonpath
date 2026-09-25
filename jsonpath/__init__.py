@@ -13,9 +13,12 @@ from typing import Union
 from ._types import JSON
 from ._types import JSONData
 from ._types import JSONScalar
+from .batch import CompiledBatch
+from .batch import NamedPaths
 from .env import JSONPathEnvironment
 from .exceptions import JSONPatchError
 from .exceptions import JSONPatchTestFailure
+from .exceptions import JSONPathBatchError
 from .exceptions import JSONPathError
 from .exceptions import JSONPathIndexError
 from .exceptions import JSONPathNameError
@@ -49,6 +52,8 @@ if TYPE_CHECKING:
 
 __all__ = (
     "compile",
+    "compile_many",
+    "CompiledBatch",
     "CompoundJSONPath",
     "findall_async",
     "findall",
@@ -57,6 +62,7 @@ __all__ = (
     "JSONPatch",
     "JSONPatchError",
     "JSONPatchTestFailure",
+    "JSONPathBatchError",
     "JSONPath",
     "JSONPathEnvironment",
     "JSONPathError",
@@ -117,6 +123,42 @@ def compile(path: str, *, strict: bool = False) -> Union[JSONPath, CompoundJSONP
             `RecursionError`.
     """
     return _STRICT_ENV.compile(path) if strict else DEFAULT_ENV.compile(path)
+
+
+def compile_many(paths: NamedPaths, *, strict: bool = False) -> CompiledBatch:
+    """Compile many JSONPaths into a single plan that shares common steps.
+
+    Each query is given a name. When the resulting plan is applied to some
+    data, queries that share a common prefix of segments have that prefix
+    resolved just once, while every query still produces exactly the same
+    results - order, duplicates and normalized paths included - as it would
+    when compiled and executed on its own.
+
+    Filters that call function extensions are only shared between queries if
+    every function they call is known to be free of side effects. Functions
+    are considered pure if they have a `pure` attribute that is true, as is
+    the case for all built-in functions. Custom functions default to being
+    treated as if they might have side effects. Set `pure = True` on a custom
+    function to allow its evaluation to be shared between queries.
+
+    Arguments:
+        paths: A mapping of query names to JSONPaths, or an iterable of
+            `(name, path)` pairs. Names must be unique. Paths can be strings
+            or already compiled `JSONPath`/`CompoundJSONPath` instances.
+        strict: When `True`, compile paths for strict compliance with
+            RFC 9535.
+
+    Returns:
+        A `CompiledBatch`, ready to match all named queries against some data
+        with `findall()`, `finditer()` or their async counterparts.
+
+    Raises:
+        JSONPathBatchError: If any path fails to compile. The exception's
+            `name` attribute identifies the offending query.
+    """
+    return (
+        _STRICT_ENV.compile_many(paths) if strict else DEFAULT_ENV.compile_many(paths)
+    )
 
 
 def findall(

@@ -32,6 +32,8 @@ from typing import Type
 from typing import Union
 
 from . import function_extensions
+from .batch import CompiledBatch
+from .batch import NamedPaths
 from .exceptions import JSONPathNameError
 from .exceptions import JSONPathSyntaxError
 from .exceptions import JSONPathTypeError
@@ -274,6 +276,33 @@ class JSONPathEnvironment:
                     )
 
         return _path
+
+    def compile_many(self, paths: NamedPaths) -> CompiledBatch:
+        """Compile many JSONPaths into a single plan that shares common steps.
+
+        Queries that share a common prefix of segments have that prefix
+        resolved just once per execution. Each query still produces exactly
+        the same results as it would when compiled and executed on its own.
+
+        Filters that call function extensions are only shared between queries
+        if every function they call is known to be free of side effects. See
+        `FilterFunction.pure`.
+
+        Arguments:
+            paths: A mapping of query names to JSONPaths, or an iterable of
+                `(name, path)` pairs. Names must be unique. Paths can be
+                strings or already compiled `JSONPath`/`CompoundJSONPath`
+                instances.
+
+        Returns:
+            A `CompiledBatch`, ready to match all named queries against some
+            data with `findall()`, `finditer()` or their async counterparts.
+
+        Raises:
+            JSONPathBatchError: If any path fails to compile. The exception's
+                `name` attribute identifies the offending query.
+        """
+        return CompiledBatch(env=self, paths=paths)
 
     def findall(
         self,

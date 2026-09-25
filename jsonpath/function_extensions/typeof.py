@@ -18,6 +18,7 @@ class TypeOf(FilterFunction):
             otherwise we'll use "int" and "float" respectively. Defaults to `True`.
     """
 
+    pure = True
     arg_types = [ExpressionType.NODES]
     return_type = ExpressionType.VALUE
 

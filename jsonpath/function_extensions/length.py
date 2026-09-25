@@ -11,6 +11,7 @@ from jsonpath.function_extensions import FilterFunction
 class Length(FilterFunction):
     """A type-aware implementation of the standard `length` function."""
 
+    pure = True
     arg_types = [ExpressionType.VALUE]
     return_type = ExpressionType.VALUE
 
