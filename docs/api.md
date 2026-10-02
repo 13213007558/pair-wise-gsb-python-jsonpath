@@ -11,6 +11,9 @@
 ::: jsonpath.CompoundJSONPath
     handler: python
 
+::: jsonpath.StreamQuery
+    handler: python
+
 ::: jsonpath.Query
     handler: python
 

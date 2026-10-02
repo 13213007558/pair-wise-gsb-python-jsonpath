@@ -2,6 +2,10 @@
 
 # Version 2.2.2 (unreleased)
 
+**Features**
+
+- Added `jsonpath.compile_stream()` and `JSONPathEnvironment.compile_stream()`, returning a `StreamQuery` that evaluates a JSONPath over an iterable of `bytes` chunks. Matches are yielded as soon as they are fully parsed, without loading the whole document. Queries are checked at compile time and rejected with `JSONPathStreamError` if they need unbounded buffering (descendant segments, selector unions, negative indices, non-positive slice steps, or filters referencing `$`). Filters that only depend on the current item are supported by buffering one item at a time, bounded by a configurable `max_buffer_size`. Malformed input raises `JSONStreamDecodeError` with the true byte offset of the error.
+
 **Fixes**
 
 - JSON Patch `move` and `copy` operations now use `add` semantics for their target locations. Previously it was not possible to move or copy to the end of an array with the special `-` index, and we would silently append to arrays given an index greater than the array's length. We now raise a `JSONPatchError` if the target index is greater than the number of elements in the array.

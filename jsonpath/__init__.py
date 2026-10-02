@@ -19,6 +19,7 @@ from .exceptions import JSONPatchTestFailure
 from .exceptions import JSONPathError
 from .exceptions import JSONPathIndexError
 from .exceptions import JSONPathNameError
+from .exceptions import JSONPathStreamError
 from .exceptions import JSONPathSyntaxError
 from .exceptions import JSONPathTypeError
 from .exceptions import JSONPointerError
@@ -26,6 +27,8 @@ from .exceptions import JSONPointerIndexError
 from .exceptions import JSONPointerKeyError
 from .exceptions import JSONPointerResolutionError
 from .exceptions import JSONPointerTypeError
+from .exceptions import JSONStreamBufferError
+from .exceptions import JSONStreamDecodeError
 from .exceptions import RelativeJSONPointerError
 from .exceptions import RelativeJSONPointerIndexError
 from .exceptions import RelativeJSONPointerSyntaxError
@@ -42,6 +45,7 @@ from .path import JSONPath
 from .pointer import JSONPointer
 from .pointer import RelativeJSONPointer
 from .pointer import resolve
+from .streaming import StreamQuery
 
 if TYPE_CHECKING:
     from .match import FilterContextVars
@@ -49,6 +53,7 @@ if TYPE_CHECKING:
 
 __all__ = (
     "compile",
+    "compile_stream",
     "CompoundJSONPath",
     "findall_async",
     "findall",
@@ -63,6 +68,7 @@ __all__ = (
     "JSONPathIndexError",
     "JSONPathMatch",
     "JSONPathNameError",
+    "JSONPathStreamError",
     "JSONPathSyntaxError",
     "JSONPathTypeError",
     "JSONPointer",
@@ -71,6 +77,8 @@ __all__ = (
     "JSONPointerKeyError",
     "JSONPointerResolutionError",
     "JSONPointerTypeError",
+    "JSONStreamBufferError",
+    "JSONStreamDecodeError",
     "Lexer",
     "NodeList",
     "match",
@@ -83,6 +91,7 @@ __all__ = (
     "RelativeJSONPointerIndexError",
     "RelativeJSONPointerSyntaxError",
     "resolve",
+    "StreamQuery",
     "JSON",
     "JSONData",
     "JSONScalar",
@@ -117,6 +126,31 @@ def compile(path: str, *, strict: bool = False) -> Union[JSONPath, CompoundJSONP
             `RecursionError`.
     """
     return _STRICT_ENV.compile(path) if strict else DEFAULT_ENV.compile(path)
+
+
+def compile_stream(path: str, *, strict: bool = False) -> StreamQuery:  # noqa: A001
+    """Prepare a path string for streaming evaluation over byte chunks.
+
+    The returned `StreamQuery` accepts an iterable of `bytes` chunks and
+    yields matches incrementally, without loading the whole JSON document
+    into memory.
+
+    Arguments:
+        path: A JSONPath as a string.
+        strict: When `True`, compile the path for strict compliance with
+            RFC 9535.
+
+    Returns:
+        A `StreamQuery`, ready to match against chunked byte input.
+
+    Raises:
+        JSONPathSyntaxError: If _path_ is invalid.
+        JSONPathStreamError: If _path_ can not be evaluated with bounded
+            buffering. This is raised before any input is consumed.
+    """
+    return (
+        _STRICT_ENV.compile_stream(path) if strict else DEFAULT_ENV.compile_stream(path)
+    )
 
 
 def findall(

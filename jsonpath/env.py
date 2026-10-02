@@ -61,6 +61,7 @@ from .token import Token
 if TYPE_CHECKING:
     from ._types import JSONData
     from .match import FilterContextVars
+    from .streaming import StreamQuery
 
 
 class JSONPathEnvironment:
@@ -274,6 +275,28 @@ class JSONPathEnvironment:
                     )
 
         return _path
+
+    def compile_stream(self, path: str) -> StreamQuery:
+        """Prepare a path string for streaming evaluation over byte chunks.
+
+        The returned `StreamQuery` accepts an iterable of `bytes` chunks and
+        yields matches incrementally, without loading the whole JSON document
+        into memory.
+
+        Arguments:
+            path: A JSONPath as a string.
+
+        Returns:
+            A `StreamQuery`, ready to match against chunked byte input.
+
+        Raises:
+            JSONPathSyntaxError: If _path_ is invalid.
+            JSONPathStreamError: If _path_ can not be evaluated with bounded
+                buffering. This is raised before any input is consumed.
+        """
+        from .streaming import StreamQuery  # noqa: PLC0415
+
+        return StreamQuery(env=self, path=self.compile(path))
 
     def findall(
         self,

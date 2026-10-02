@@ -152,6 +152,58 @@ class JSONPathRecursionError(JSONPathError, RecursionError):
         self.token = token
 
 
+class JSONPathStreamError(JSONPathError):
+    """An exception raised when a JSONPath can not be evaluated in a streaming fashion.
+
+    This is raised at compile time, before any input is consumed, if a query
+    requires the whole document (or otherwise unbounded buffering) to evaluate.
+
+    Arguments:
+        args: Arguments passed to `Exception`.
+        token: The token that caused the error.
+    """
+
+    def __init__(self, *args: object, token: Optional[Token] = None) -> None:
+        super().__init__(*args)
+        self.token = token
+
+
+class JSONStreamDecodeError(JSONPathStreamError):
+    """An exception raised when chunked JSON input is malformed.
+
+    Arguments:
+        args: Arguments passed to `Exception`.
+        position: The absolute byte offset into the input stream at which the
+            error was detected.
+    """
+
+    def __init__(self, *args: object, position: int) -> None:
+        super().__init__(*args)
+        self.position = position
+
+    def __str__(self) -> str:
+        return f"{self.message} (byte {self.position})"
+
+
+class JSONStreamBufferError(JSONPathStreamError):
+    """An exception raised when a buffered item exceeds the configured limit.
+
+    Arguments:
+        args: Arguments passed to `Exception`.
+        position: The absolute byte offset into the input stream at which the
+            limit was exceeded.
+        limit: The configured maximum buffer size, in bytes.
+    """
+
+    def __init__(self, *args: object, position: int, limit: int) -> None:
+        super().__init__(*args)
+        self.position = position
+        self.limit = limit
+
+    def __str__(self) -> str:
+        return f"{self.message} (limit {self.limit} bytes, byte {self.position})"
+
+
 class JSONPointerError(Exception):
     """Base class for all JSON Pointer errors."""
 
