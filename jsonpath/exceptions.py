@@ -152,6 +152,14 @@ class JSONPathRecursionError(JSONPathError, RecursionError):
         self.token = token
 
 
+class JSONPathStreamingError(JSONPathError):
+    """An exception raised when a query cannot be evaluated from a stream."""
+
+
+class JSONPathBufferError(JSONPathStreamingError, ValueError):
+    """An exception raised when streamed JSON exceeds a configured buffer limit."""
+
+
 class JSONPointerError(Exception):
     """Base class for all JSON Pointer errors."""
 

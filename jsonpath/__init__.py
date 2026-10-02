@@ -16,10 +16,12 @@ from ._types import JSONScalar
 from .env import JSONPathEnvironment
 from .exceptions import JSONPatchError
 from .exceptions import JSONPatchTestFailure
+from .exceptions import JSONPathBufferError
 from .exceptions import JSONPathError
 from .exceptions import JSONPathIndexError
 from .exceptions import JSONPathNameError
 from .exceptions import JSONPathSyntaxError
+from .exceptions import JSONPathStreamingError
 from .exceptions import JSONPathTypeError
 from .exceptions import JSONPointerError
 from .exceptions import JSONPointerIndexError
@@ -44,6 +46,7 @@ from .pointer import RelativeJSONPointer
 from .pointer import resolve
 
 if TYPE_CHECKING:
+    from .byte_stream import BytesChunkStream
     from .match import FilterContextVars
 
 
@@ -52,6 +55,7 @@ __all__ = (
     "CompoundJSONPath",
     "findall_async",
     "findall",
+    "finditer_bytes",
     "finditer_async",
     "finditer",
     "JSONPatch",
@@ -59,11 +63,13 @@ __all__ = (
     "JSONPatchTestFailure",
     "JSONPath",
     "JSONPathEnvironment",
+    "JSONPathBufferError",
     "JSONPathError",
     "JSONPathIndexError",
     "JSONPathMatch",
     "JSONPathNameError",
     "JSONPathSyntaxError",
+    "JSONPathStreamingError",
     "JSONPathTypeError",
     "JSONPointer",
     "JSONPointerError",
@@ -238,6 +244,24 @@ def finditer(
         _STRICT_ENV.finditer(path, data, filter_context=filter_context)
         if strict
         else DEFAULT_ENV.finditer(path, data, filter_context=filter_context)
+    )
+
+
+def finditer_bytes(
+    path: str,
+    chunks: "BytesChunkStream",
+    *,
+    filter_context: Optional["FilterContextVars"] = None,
+    strict: bool = False,
+    max_item_size: int = 10 * 1024 * 1024,
+) -> Iterable[JSONPathMatch]:
+    """Yield matches from a top-level JSON array supplied as byte chunks."""
+    env = _STRICT_ENV if strict else DEFAULT_ENV
+    return env.finditer_bytes(
+        path,
+        chunks,
+        filter_context=filter_context,
+        max_item_size=max_item_size,
     )
 
 

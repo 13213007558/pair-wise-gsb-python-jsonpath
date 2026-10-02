@@ -21,6 +21,7 @@ from operator import getitem
 from typing import TYPE_CHECKING
 from typing import Any
 from typing import AsyncIterable
+from typing import Iterable as TypingIterable
 from typing import Callable
 from typing import Dict
 from typing import Iterable
@@ -59,6 +60,7 @@ from .token import TOKEN_UNION
 from .token import Token
 
 if TYPE_CHECKING:
+    from .byte_stream import BytesChunkStream
     from ._types import JSONData
     from .match import FilterContextVars
 
@@ -374,6 +376,26 @@ class JSONPathEnvironment:
                 Python's recursion limit.
         """
         return self.compile(path).match(data, filter_context=filter_context)
+
+    def finditer_bytes(
+        self,
+        path: str,
+        chunks: "BytesChunkStream",
+        *,
+        filter_context: Optional[FilterContextVars] = None,
+        max_item_size: int = 10 * 1024 * 1024,
+    ) -> TypingIterable[JSONPathMatch]:
+        """Yield matches from a chunked top-level JSON array."""
+        compiled = self.compile(path)
+        if not isinstance(compiled, JSONPath):
+            from .exceptions import JSONPathStreamingError
+
+            raise JSONPathStreamingError("compound JSONPath queries cannot stream")
+        return compiled.finditer_bytes(
+            chunks,
+            filter_context=filter_context,
+            max_item_size=max_item_size,
+        )
 
     def query(
         self,

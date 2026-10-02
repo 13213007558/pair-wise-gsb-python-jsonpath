@@ -21,6 +21,7 @@ from jsonpath.selectors import IndexSelector
 from jsonpath.selectors import NameSelector
 
 if TYPE_CHECKING:
+    from jsonpath.byte_stream import BytesChunkStream
     from jsonpath._types import JSONData
 
     from .env import JSONPathEnvironment
@@ -223,6 +224,23 @@ class JSONPath:
                 the descendent segment.
         """
         return Query(self.finditer(data, filter_context=filter_context), self.env)
+
+    def finditer_bytes(
+        self,
+        chunks: "BytesChunkStream",
+        *,
+        filter_context: Optional[FilterContextVars] = None,
+        max_item_size: int = 10 * 1024 * 1024,
+    ) -> Iterable[JSONPathMatch]:
+        """Yield matches from a top-level JSON array supplied as byte chunks."""
+        from jsonpath.byte_stream import prepare_streaming_query
+
+        streaming_query = prepare_streaming_query(self)
+        return streaming_query.finditer(
+            chunks,
+            filter_context=filter_context,
+            max_item_size=max_item_size,
+        )
 
     def empty(self) -> bool:
         """Return `True` if this path has no selectors."""
